@@ -1,6 +1,6 @@
 # Spatio-temporal food web dynamics
 
-Romain Frelat, 4th January 2020
+Romain Frelat, last update: 6th January 2020
 
 
 
@@ -35,7 +35,7 @@ The dataset and additional functions are all included in the Rdata file [TensorN
 - tensorNS: the tensor of relative abundance of 114 species, over 6 boxes and 15 year
 - netNS: food web of the north Sea of the 114 persistant species and five functional groups (Detritus,  Microalgae, Macroalgae, Phytoplankton, Zooplankton)
 - coordinatesBox: coordinates of the 6 boxes (longitude and latitude in decimal degrees)
-- six home-made functions (use them at your own risk):
+- five home-made functions (use them at your own risk):
   - trophiclevels: calculate the trophic level
   - jaccardsim: calculate the diet similarity, defined as the Jaccard distance
   - fwind: extract multiple food web metrics
@@ -48,11 +48,11 @@ The dataset and additional functions are all included in the Rdata file [TensorN
 
 **Be aware**: the relative abundance were derived from pre-processing of the raw data to fit the purpose of our study (Hellinger log transformed and constant sampling intensity, see Material and Methods for more details). To avoid any misuse of the dataset, the species names were replaced by numbers (from S1 to S114) in tensorNS and netNS. If you require the raw dataset from the German Small Scale Bottom Trawl Survey, please contact Anne Sell and Ingrid Kröncke.
 
+**Please notice**: To simplify the procedure, the analysis described here is slightly different from the analysis in the manuscript. Instead of running the three steps on each subsampling  and showing the median of the 100 outputs (in the manuscript), we are computing the three steps on the median of the 100 subsamplings. Hence small discrepency might appear compare to results from manuscript version. 
 
 
 
 
-*Add DOI*
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
