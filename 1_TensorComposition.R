@@ -1,10 +1,10 @@
 # Tensor decomposition on fish and benthos communities
+# The analysis is carried out on the median of the resamplings
+# The name of species have been changed to S1-S114
 
-# analysis is carried out on the median of the resamplings
-# the name of species have been altered to A:XX
+# Author: R. Frelat, last update: 08.01.2021
 
-
-## Load dataset -----------------------------------------
+## 1. Load dataset ----------------------------------------
 # Load needed packages
 library(PTAk)
 library(RColorBrewer)
@@ -12,14 +12,15 @@ library(RColorBrewer)
 # Load data 
 load("TensorNorthSea.Rdata")
 
-#Check the diensions of the tensor
+#Check the dimensions of the tensor
 dim(TensorNS) #114, 15, 6
 nsp<-dim(TensorNS)[1]
 nye<-dim(TensorNS)[2]
 nar<-dim(TensorNS)[3]
 
 
-## Scaling -----------------------------------------------
+## 2. Scaling ---------------------------------------------
+# data is scaled per species (1st dimension)
 scaleT<-array(0,dim=dim(TensorNS))
 for (i in 1:dim(TensorNS)[1]){
   ma<-mean(TensorNS[i,,])
@@ -29,34 +30,42 @@ for (i in 1:dim(TensorNS)[1]){
 dimnames(scaleT)<-dimnames(TensorNS)
 
 
-## Principal tensor ------------------------------
-#1 Simple PCA 3D with only key tensor
+## 3. Principal tensor ------------------------------
+# Run the PTA
 PTAcompo<-PTA3(scaleT, nbPT = 4, nbPT2 = 3, minpct = 0.1)
-summary(PTAcompo)
-
+# See the full summary
 summary.PTAk(PTAcompo,testvar = 0)
-#First principal tensor explain 28% of variability (v111)
+
+# Select the relevant PTs (identified with a '*')
 out <- !substr(PTAcompo[[3]]$vsnam, 1, 1) == "*"
+# Get the percentage of variance explained by each PT
 gct<-(PTAcompo[[3]]$pct*PTAcompo[[3]]$ssX/PTAcompo[[3]]$ssX[1])[out]
 
+# Barplot of the successive explained variance
 barplot(sort(gct, decreasing = TRUE),
         border=NA, xlab="", ylab="Percentage of variance")
 
-nkeep <- 5 #X1. 7, X2. 6
+# Select the number of PTs to be kept
+nkeep <- 5
+# Identify the selected PTs and their contribution
 keepCompo <- (1:length(out))[out][order(gct, decreasing = TRUE)[1:nkeep]]
 eigCompo <- gct[keepCompo]
 
 
-# Description of selected PT --------------------
+# 4. Description of selected PT ---------------------------
 # similar to figure 2
+# customize the labels
 labperc <- round((100 * (PTAcompo[[3]]$d[keepCompo])^2)/PTAcompo[[3]]$ssX[1],1)
 labkeep <- paste0(paste0("PT", 1:nkeep), " - ", labperc, "%")
 labbox<-gsub("BOX ", "", dimnames(scaleT)[[3]])
 topyr<-seq(2000,2015, by=5)
 labyr<-ifelse(dimnames(scaleT)[[2]]%in%topyr, dimnames(scaleT)[[2]], "")
 
+#customize the ploting window
 op <- par(no.readonly = TRUE)
 par(mfrow=c(2,3), mar = c(3,3,3,1), oma=c(1,1,0,0))
+
+#create plot for each PT
 for (i in seq_along(keepCompo)){
   lab <- labkeep[i]
   temp <- PTAcompo[[3]]$v[keepCompo[i],] %o% PTAcompo[[2]]$v[keepCompo[i],]
@@ -80,13 +89,12 @@ for (i in 1:length(pal)){
   rect(0,i-1,1,i,col = pal[i])
 }
 axis(2, at=c(0, length(pal)/2, length(pal)), labels = c("Low", "0", "High"))
-#mtext("Loadings", 3, line = 0.5, adj = 1)
 mtext("Loadings", 2, line=2)
 par(op) #reset graphical parameters
 
-## Classification -------------------------------------------
+## 5. Species classification ------------------------------
 # classify species based on their scores
-# get Figure SX and 3
+# similar to Figure S3
 
 # Get the score of the species on the selected PTs
 cooCompo <- t(PTAcompo[[1]]$v[c(keepCompo),])
@@ -123,7 +131,9 @@ levels(clustCompo) <- c("clustA", "clustM", "clustM+",
                       "clustC", "clustD", "clustA+")
 clustCompo <- factor(clustCompo, levels = levels(clustCompo)[c(6,1,4,5,2,3)])
 
-## Interpret the clusters -----------------------
+## 6. Interpret the clusters -----------------------
+# similar to Figure 3
+
 # reconstruct the dynamics from the selected PTs
 PTDyn <- REBUILD(PTAcompo, nTens = keepCompo, testvar = 1)
 
@@ -139,6 +149,7 @@ ab <- max(abs(meanDyn))
 colcut <- seq(-ab, ab, length.out = 9)
 colpal <- brewer.pal(8,"BrBG")
 
+#create plot for each cluster
 par(mfrow=c(3,nclust+1),oma=c(1,3,0,0))
 for (c in 1:nclust){
   temp <- t(meanDyn[c,,])

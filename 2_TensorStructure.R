@@ -1,10 +1,13 @@
 # Tensor decomposition on food web metrics
+# The analysis is carried out on the median of the resamplings
+# The name of species have been changed to S1-S114
 
+# Author: R. Frelat, last update: 08.01.2021
 
-## Data -----------------------------------------
+## 1. Load dataset ----------------------------------------
 # Load needed packages
 library(PTAk)
-library(corrplot) #corrplot()
+library(corrplot)
 library(RColorBrewer)
 library(igraph)
 library(ade4)
@@ -13,8 +16,7 @@ library(abind)
 # Load data 
 load("TensorNorthSea.Rdata")
 
-
-## Add abundance for non sampled taxa -----------
+## Add abundance for non sampled taxa
 nonsampled <- c("Detritus",  "Microalgae", "Macroalgae",
                 "Phytoplankton", "Zooplankton")  
 
@@ -30,10 +32,11 @@ dim(TensorNS) #119 species, 15 years, 6 boxes
 TensorNS <- TensorNS[match(V(netNS)$name, dimnames(TensorNS)[[1]]),,]
 # dimnames(TensorNS)[[1]]==V(netNS)$name
 
-# Plot food web
-#Average abundance per species
+## Plot food web
+# similar to figure 1b
+# Average abundance per species
 abuM <- apply(TensorNS, 1, mean)
-#scale abundance
+# scale abundance
 nsizea<-10
 nsizeb<-5
 scaleabu<-abuM/max(abuM)*nsizea + nsizeb
@@ -48,7 +51,7 @@ par(op) #reset graphical parameters
 metamet <- fwind(netNS, ab = abuM)
 print(metamet)
 
-## Compute food web metrics ---------------------
+## 2. Compute food web metrics ----------------------------
 fwmet<-array(NA,dim = c(length(metamet), dim(TensorNS)[2:3]))
 #The loop might take some minutes to compute
 for (i in 1:dim(TensorNS)[2]){
@@ -67,19 +70,21 @@ dimnames(fwmet)<-list(names(metamet),
                       dimnames(TensorNS)[[3]])
 
 
-# Tensor decomposition --------------------------
-dim(fwmet) #16 metrics, 15 years, 6 boxes
+# 3. Tensor decomposition ---------------------------------
 
+# 3a Pre-processing 
+dim(fwmet) #16 metrics, 15 years, 6 boxes
 nar<-dim(fwmet)[3]
 nye<-dim(fwmet)[2]
 nme<-dim(fwmet)[1]
 
-#correlation plot
+# correlation plot
+# similar to Figure S8
 matfwM <- apply(fwmet, 1, c)
 corrplot(cor(matfwM), type = "upper", method = "ellipse",
          diag = FALSE, tl.col = "black")
 
-#Scaling
+# Scaling
 scaleFW<-array(0,dim=dim(fwmet))
 for (i in 1:dim(fwmet)[1]){
   ma<-mean(fwmet[i,,])
@@ -88,37 +93,46 @@ for (i in 1:dim(fwmet)[1]){
 }
 dimnames(scaleFW)<-dimnames(fwmet)
 
-# Principal tensor ------------------------------
-#1 Simple PCA 3D with only key tensor
+# 3b Run PTA and select relevant PTs
 PTAfw<-PTA3(scaleFW, nbPT = 4, nbPT2 = 3, minpct = 0.1)
+# See the summary
 summary(PTAfw)
 
-#First principal tensor explain 28% of variability (v111)
+# Select the relevant PTs (identified with a '*')
 out <- !substr(PTAfw[[3]]$vsnam, 1, 1) == "*"
+
+# Get the percentage of variance explained by each PT
 gct<-(PTAfw[[3]]$pct*PTAfw[[3]]$ssX/PTAfw[[3]]$ssX[1])[out]
 
+# Barplot of the successive explained variance
 barplot(sort(gct, decreasing = TRUE),
         border=NA, xlab="", ylab="Percentage of variance")
 
+# Select the number of PTs to be kept
 nkeep <- 4 
+# Identify the selected PTs and their contribution
 keepFW <- (1:length(out))[out][order(gct, decreasing = TRUE)[1:nkeep]]
 eigFW <- gct[keepFW]
 
 
-# Description of selected PT --------------------
+# 4. Description of selected PT --------------------
+# similar to figure 4
+
+# customize the labels
 cooFW<-t(PTAfw[[1]]$v[c(keepFW),])
 row.names(cooFW)<-dimnames(fwmet)[[1]]
-
 labperc <- round((100 * (PTAfw[[3]]$d[keepFW])^2)/PTAfw[[3]]$ssX[1],1)
 labkeep <- paste0(paste0("PT", 1:nkeep), " - ", labperc, "%")
 labbox<-gsub("BOX ", "", dimnames(fwmet)[[3]])
 topyr<-seq(2000,2015, by=5)
 labyr<-ifelse(dimnames(fwmet)[[2]]%in%topyr, dimnames(fwmet)[[2]], "")
 
+#inverse PT sign to simplify interpretation
 PTAfw[[1]]$v[keepFW[4],]<- (-1)*PTAfw[[1]]$v[keepFW[4],]
 PTAfw[[2]]$v[keepFW[4],]<- (-1)*PTAfw[[2]]$v[keepFW[4],]
 PTAfw[[3]]$v[keepFW[4],]<- (-1)*PTAfw[[3]]$v[keepFW[4],]
 
+#create plot for each PT
 par(mfrow=c(2,nkeep), mar = c(3,3,3,1), oma=c(1,1,0,0))
 for (i in seq_along(keepFW)){
   lab <- labkeep[i]

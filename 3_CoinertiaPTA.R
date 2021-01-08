@@ -1,5 +1,13 @@
-# Co-inertia of Tensor decomposition
+# Co-inertia of tensor decomposition
+# The analysis is carried out on the median of the resamplings
+# The name of species have been changed to S1-S114
+# The food web metrics is loaded from the file PTA_results.Rdata
+# which is the output from the script 2_TensorStructure.R
 
+# Author: R. Frelat, last update: 08.01.2021
+
+## 1. Load dataset ----------------------------------------
+# Load needed packages
 require(ade4)
 
 # Load data 
@@ -9,6 +17,8 @@ load("PTA_results.Rdata")
 nar<-dim(TensorNS)[3]
 nye<-dim(TensorNS)[2]
 
+## 2. Transform data into dudi object ---------------------
+# for composition - scaleT
 info <- expand.grid(dimnames(TensorNS)[2:3])
 tab2D <- as.data.frame(apply(scaleT, 1, c))
 names(tab2D) <- dimnames(scaleT)[[1]]
@@ -24,6 +34,7 @@ dudiPTAABO <- list(
 class(dudiPTAABO) <- "dudi"
 names(dudiPTAABO$tab) <- dimnames(scaleT)[[1]]
 
+# for structure - scaleFW
 tab2D <- as.data.frame(apply(scaleFW, 1, c))
 names(tab2D) <- dimnames(scaleFW)[[1]]
 dudiPTAFW <- list(
@@ -37,18 +48,27 @@ dudiPTAFW <- list(
 )
 class(dudiPTAFW) <- "dudi"
 
+## 3. Co-intertia analysis --------------------------------
+# Run co-inertia analysis
 coi <- coinertia(dudiPTAABO, dudiPTAFW, scannf = FALSE, nf = 3)
+
+# default plot
 plot(coi)
+
+# RV test, checking the significance of co-variance
 RV.rtest(dudiPTAABO$tab, dudiPTAFW$tab)
 
+# Number of PC to be view
 nkeep <- 2
 
+# customize the labels
 labperc <- round(coi$eig/sum(coi$eig)*100, 1)[1:nkeep]
 labkeep <- paste0(paste0("PC", 1:nkeep), " - ", labperc, "%")
 labbox<-gsub("BOX ", "", dimnames(TensorNS)[[3]])
 topyr<-seq(2000,2015, by=5)
 labyr<-ifelse(dimnames(TensorNS)[[2]]%in%topyr, dimnames(TensorNS)[[2]], "")
 
+#create plot for each PC
 op <- par(no.readonly = TRUE)
 par(mfrow=c(3,nkeep), mar = c(3,3,3,1), oma=c(1,1,0,0))
 for (i in 1:nkeep){
@@ -96,33 +116,41 @@ for (i in 1:nkeep){
 }
 par(op)
 
-## Per box --------------------------------------
+## 4. Co-inertia per box ----------------------------------
 yr <- levels(info$Var1)
-
 coiBox <- list()
 rvBox <- c()
+# loop for each box (3rd dimension)
 for (i in 1:dim(TensorNS)[3]){
   abuI <- t(TensorNS[,,i])
   fwI <- t(fwmet[,,i])
   
-  #remove species absent from box i
+  # remove species absent from box i
   abuI <- abuI[,apply(abuI,2,sum)>0]
+  # run PCA on abundance of box i
   pcaAI <- dudi.pca(abuI, scannf = FALSE, nf = 3)
+  # run PCA on food web metrics of box i
   pcaFI <- dudi.pca(fwI, scannf = FALSE, nf = 3)
+  # run co-intertia analysis
   coI <- coinertia(pcaAI, pcaFI, scannf = FALSE, nf=2)
   
+  # change sign to help comparison of results
+  # temporal scores have preferable a positive slope
   if (lm(coI$lX[,1]~as.numeric(yr))$coefficients[2]<0){
     coI$lX[,1] <- (-1)*coI$lX[,1]
     coI$lY[,1] <- (-1)*coI$lY[,1]
     coI$li[,1] <- (-1)*coI$li[,1]
     coI$co[,1] <- (-1)*coI$co[,1]
   }
+  # save result of co-intertia analysis in a list
   coiBox[[i]] <- coI
   
+  # RV test
   rvI <- RV.rtest(pcaAI$li, pcaFI$li, nrepet = 1000)
   rvBox <- c(rvBox, rvI$pvalue)
 }
 
+# similar to figure 6A
 par(mar=c(3,4,1,1))
 plot(yr, coiBox[[i]]$lX[,1], ylim=c(-9, 8),
      ylab="PC1", type="n")
@@ -134,6 +162,7 @@ legend("topleft", legend = dimnames(TensorNS)[[3]],
        lty=1, col=rainbow(6), bty="n")
 par(op)
 
+# similar to figure 6B
 met <- c()
 for (i in 1:length(coiBox)){
   met <- cbind(met, coiBox[[i]]$li[,1])
@@ -144,6 +173,3 @@ colnames(met) <- dimnames(abuM)[[3]]
 
 myHeatmap(met, pal="BrBG")
 par(op)
-
-
-
