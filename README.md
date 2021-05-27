@@ -1,10 +1,10 @@
 # Spatio-temporal food web dynamics
 
-Romain Frelat, last update: 8th January 2020
+Romain Frelat, last update: 27th May 2021
 
 
 
-The repository contains the scripts and dataset to reproduce the results presented in the manuscript "Spatio-temporal community dynamics: the missing link between composition and structure" by Romain Frelat, Susanne Kortsch, Ingrid Kröncke, Hermann Neumann, Marie C. Nordström, Pierre Olivier, and Anne F. Sell.
+The repository contains the scripts and dataset to reproduce the results presented in the manuscript "Food-web structure and community composition: a comparison across space and time" by Romain Frelat, Susanne Kortsch, Ingrid Kröncke, Hermann Neumann, Marie C. Nordström, Pierre E. N. Olivier, and Anne F. Sell.
 
 
 
