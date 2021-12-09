@@ -56,7 +56,7 @@ coi <- coinertia(dudiPTAABO, dudiPTAFW, scannf = FALSE, nf = 3)
 plot(coi)
 
 # RV test, checking the significance of co-variance
-RV.rtest(dudiPTAABO$tab, dudiPTAFW$tab)
+RV.rtest(dudiPTAABO$tab, dudiPTAFW$tab, nrepet = 1000)
 
 # Number of PC to be view
 nkeep <- 2
